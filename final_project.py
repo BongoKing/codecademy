@@ -1,0 +1,544 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Capstone 2: Biodiversity Project
+
+# # Introduction
+# You are a biodiversity analyst working for the National Parks Service.  You're going to help them analyze some data about species at various national parks.
+# 
+# Note: The data that you'll be working with for this project is *inspired* by real data, but is mostly fictional.
+
+# # Step 1
+# Import the modules that you'll be using in this assignment:
+# - `from matplotlib import pyplot as plt`
+# - `import pandas as pd`
+
+# In[1]:
+
+
+from matplotlib import pyplot as plt
+import pandas as pd
+
+
+# # Step 2
+# You have been given two CSV files. `species_info.csv` with data about different species in our National Parks, including:
+# - The scientific name of each species
+# - The common names of each species
+# - The species conservation status
+# 
+# Load the dataset and inspect it:
+# - Load `species_info.csv` into a DataFrame called `species`
+
+# In[2]:
+
+
+species = pd.read_csv('species_info.csv')
+
+
+# Inspect each DataFrame using `.head()`.
+
+# In[3]:
+
+
+species.head()
+
+
+# # Step 3
+# Let's start by learning a bit more about our data.  Answer each of the following questions.
+
+# How many different species are in the `species` DataFrame?
+
+# In[4]:
+
+
+species.nunique() #Different species
+
+
+# In[5]:
+
+
+species.scientific_name.nunique() #Different species according to scientific names
+
+
+# What are the different values of `category` in `species`?
+
+# In[6]:
+
+
+species.category.unique()
+
+
+# What are the different values of `conservation_status`?
+
+# In[7]:
+
+
+species.conservation_status.unique()
+
+
+# # Step 4
+# Let's start doing some analysis!
+# 
+# The column `conservation_status` has several possible values:
+# - `Species of Concern`: declining or appear to be in need of conservation
+# - `Threatened`: vulnerable to endangerment in the near future
+# - `Endangered`: seriously at risk of extinction
+# - `In Recovery`: formerly `Endangered`, but currnetly neither in danger of extinction throughout all or a significant portion of its range
+# 
+# We'd like to count up how many species meet each of these criteria.  Use `groupby` to count how many `scientific_name` meet each of these criteria.
+
+# In[8]:
+
+
+species.groupby('conservation_status').scientific_name.nunique().reset_index()
+
+
+# As we saw before, there are far more than 200 species in the `species` table.  Clearly, only a small number of them are categorized as needing some sort of protection.  The rest have `conservation_status` equal to `None`.  Because `groupby` does not include `None`, we will need to fill in the null values.  We can do this using `.fillna`.  We pass in however we want to fill in our `None` values as an argument.
+# 
+# Paste the following code and run it to see replace `None` with `No Intervention`:
+# ```python
+# species.fillna('No Intervention', inplace=True)
+# ```
+
+# In[9]:
+
+
+species.fillna('No Intervention', inplace=True)
+
+
+# Great! Now run the same `groupby` as before to see how many species require `No Intervention`.
+
+# In[10]:
+
+
+species.groupby('conservation_status').scientific_name.nunique().reset_index()
+
+
+# Let's use `plt.bar` to create a bar chart.  First, let's sort the columns by how many species are in each categories.  We can do this using `.sort_values`.  We use the the keyword `by` to indicate which column we want to sort by.
+# 
+# Paste the following code and run it to create a new DataFrame called `protection_counts`, which is sorted by `scientific_name`:
+# ```python
+# protection_counts = species.groupby('conservation_status')\
+#     .scientific_name.count().reset_index()\
+#     .sort_values(by='scientific_name')
+# ```
+
+# In[11]:
+
+
+protection_counts = species.groupby('conservation_status').scientific_name.count().reset_index().sort_values(by='scientific_name')
+
+
+# Now let's create a bar chart!
+# 1. Start by creating a wide figure with `figsize=(10, 4)`
+# 1. Start by creating an axes object called `ax` using `plt.subplot`.
+# 2. Create a bar chart whose heights are equal to `scientific_name` column of `protection_counts`.
+# 3. Create an x-tick for each of the bars.
+# 4. Label each x-tick with the label from `conservation_status` in `protection_counts`
+# 5. Label the y-axis `Number of Species`
+# 6. Title the graph `Conservation Status by Species`
+# 7. Plot the grap using `plt.show()`
+
+# In[12]:
+
+
+plt.figure(figsize = (10, 4))
+ax = plt.subplot()
+plt.bar(range(len(protection_counts)), protection_counts.scientific_name.values)
+ax.set_xticks(range(len(protection_counts)))
+ax.set_xticklabels(protection_counts.conservation_status.values)
+plt.ylabel('Number of Species')
+plt.title('Conservation Status by Species')
+plt.show()
+
+
+# # Step 4
+# Are certain types of species more likely to be endangered?
+
+# Let's create a new column in `species` called `is_protected`, which is `True` if `conservation_status` is not equal to `No Intervention`, and `False` otherwise.
+
+# In[13]:
+
+
+species['is_protected'] = species.conservation_status != 'No Intervention'
+
+
+# Let's group by *both* `category` and `is_protected`.  Save your results to `category_counts`.
+
+# In[14]:
+
+
+category_counts = species.groupby(['category', 'is_protected']).scientific_name.nunique().reset_index()
+
+
+# Examine `category_counts` using `head()`.
+
+# In[15]:
+
+
+category_counts.head()
+
+
+# It's going to be easier to view this data if we pivot it.  Using `pivot`, rearange `category_counts` so that:
+# - `columns` is `is_protected`
+# - `index` is `category`
+# - `values` is `scientific_name`
+# 
+# Save your pivoted data to `category_pivot`. Remember to `reset_index()` at the end.
+
+# In[16]:
+
+
+category_pivot = category_counts.pivot(columns='is_protected', index='category', values='scientific_name').reset_index()
+
+
+# Examine `category_pivot`.
+
+# In[17]:
+
+
+category_pivot
+
+
+# Use the `.columns` property to  rename the categories `True` and `False` to something more description:
+# - Leave `category` as `category`
+# - Rename `False` to `not_protected`
+# - Rename `True` to `protected`
+
+# In[18]:
+
+
+category_pivot.columns = ['category', 'not_protected', 'protected']
+
+
+# Let's create a new column of `category_pivot` called `percent_protected`, which is equal to `protected` (the number of species that are protected) divided by `protected` plus `not_protected` (the total number of species).
+
+# In[19]:
+
+
+category_pivot['percent_protected'] = category_pivot.protected / (category_pivot.protected + category_pivot.not_protected)
+
+
+# Examine `category_pivot`.
+
+# In[20]:
+
+
+category_pivot
+
+
+# It looks like species in category `Mammal` are more likely to be endangered than species in `Bird`.  We're going to do a significance test to see if this statement is true.  Before you do the significance test, consider the following questions:
+# - Is the data numerical or categorical?
+# - How many pieces of data are you comparing?
+
+# Based on those answers, you should choose to do a *chi squared test*.  In order to run a chi squared test, we'll need to create a contingency table.  Our contingency table should look like this:
+# 
+# ||protected|not protected|
+# |-|-|-|
+# |Mammal|?|?|
+# |Bird|?|?|
+# 
+# Create a table called `contingency` and fill it in with the correct numbers
+
+# In[21]:
+
+
+contingency = [[30, 146], [75, 413]]
+
+
+# In order to perform our chi square test, we'll need to import the correct function from scipy.  Past the following code and run it:
+# ```py
+# from scipy.stats import chi2_contingency
+# ```
+
+# In[22]:
+
+
+from scipy.stats import chi2_contingency
+
+
+# Now run `chi2_contingency` with `contingency`.
+
+# In[23]:
+
+
+chi2_contingency(contingency)
+
+
+# It looks like this difference isn't significant!
+# 
+# Let's test another.  Is the difference between `Reptile` and `Mammal` significant?
+
+# In[24]:
+
+
+contingency2 = [[5, 73], [30, 146]]
+chi2_contingency(contingency2)
+
+
+# Yes! It looks like there is a significant difference between `Reptile` and `Mammal`!
+
+# # Step 5
+
+# Conservationists have been recording sightings of different species at several national parks for the past 7 days.  They've saved sent you their observations in a file called `observations.csv`.  Load `observations.csv` into a variable called `observations`, then use `head` to view the data.
+
+# In[25]:
+
+
+observations = pd.read_csv('observations.csv')
+observations.head()
+
+
+# Some scientists are studying the number of sheep sightings at different national parks.  There are several different scientific names for different types of sheep.  We'd like to know which rows of `species` are referring to sheep.  Notice that the following code will tell us whether or not a word occurs in a string:
+
+# In[26]:
+
+
+# Does "Sheep" occur in this string?
+str1 = 'This string contains Sheep'
+'Sheep' in str1
+
+
+# In[27]:
+
+
+# Does "Sheep" occur in this string?
+str2 = 'This string contains Cows'
+'Sheep' in str2
+
+
+# Use `apply` and a `lambda` function to create a new column in `species` called `is_sheep` which is `True` if the `common_names` contains `'Sheep'`, and `False` otherwise.
+
+# In[28]:
+
+
+species['is_sheep'] = species.common_names.apply(lambda x: 'Sheep' in x)
+species.head()
+
+
+# Select the rows of `species` where `is_sheep` is `True` and examine the results.
+
+# In[29]:
+
+
+species[species.is_sheep]
+
+
+# Many of the results are actually plants.  Select the rows of `species` where `is_sheep` is `True` and `category` is `Mammal`.  Save the results to the variable `sheep_species`.
+
+# In[30]:
+
+
+sheep_species = species[(species.is_sheep) & (species.category == 'Mammal')]
+sheep_species
+
+
+# Now merge `sheep_species` with `observations` to get a DataFrame with observations of sheep.  Save this DataFrame as `sheep_observations`.
+
+# In[31]:
+
+
+sheep_observations = observations.merge(sheep_species)
+sheep_observations
+
+
+# How many total sheep observations (across all three species) were made at each national park?  Use `groupby` to get the `sum` of `observations` for each `park_name`.  Save your answer to `obs_by_park`.
+# 
+# This is the total number of sheep observed in each park over the past 7 days.
+
+# In[32]:
+
+
+obs_by_park = sheep_observations.groupby('park_name').observations.sum().reset_index()
+obs_by_park
+
+
+# Create a bar chart showing the different number of observations per week at each park.
+# 
+# 1. Start by creating a wide figure with `figsize=(16, 4)`
+# 1. Start by creating an axes object called `ax` using `plt.subplot`.
+# 2. Create a bar chart whose heights are equal to `observations` column of `obs_by_park`.
+# 3. Create an x-tick for each of the bars.
+# 4. Label each x-tick with the label from `park_name` in `obs_by_park`
+# 5. Label the y-axis `Number of Observations`
+# 6. Title the graph `Observations of Sheep per Week`
+# 7. Plot the grap using `plt.show()`
+
+# In[33]:
+
+
+plt.figure(figsize = (16, 4))
+ax = plt.subplot()
+plt.bar(range(len(obs_by_park)), obs_by_park.observations.values)
+ax.set_xticks(range(len(obs_by_park)))
+ax.set_xticklabels(obs_by_park.park_name.values)
+plt.ylabel('Number of Observations')
+plt.title('Observations of Sheep per Week')
+plt.show()
+
+
+# Our scientists know that 15% of sheep at Bryce National Park have foot and mouth disease.  Park rangers at Yellowstone National Park have been running a program to reduce the rate of foot and mouth disease at that park.  The scientists want to test whether or not this program is working.  They want to be able to detect reductions of at least 5 percentage points.  For instance, if 10% of sheep in Yellowstone have foot and mouth disease, they'd like to be able to know this, with confidence.
+# 
+# Use <a href="https://s3.amazonaws.com/codecademy-content/courses/learn-hypothesis-testing/a_b_sample_size/index.html">Codecademy's sample size calculator</a> to calculate the number of sheep that they would need to observe from each park.  Use the default level of significance (90%).
+# 
+# Remember that "Minimum Detectable Effect" is a percent of the baseline.
+
+# In[34]:
+
+
+mde = 100 * 0.05 / 0.15
+mde
+baseline = 0.15
+samplesize = 870
+
+
+# How many weeks would you need to observe sheep at Bryce National Park in order to observe enough sheep?  How many weeks would you need to observe at Yellowstone National Park to observe enough sheep?
+
+# In[35]:
+
+
+observations_Bryce = obs_by_park[obs_by_park.park_name == 'Bryce National Park'].observations.values
+observation_weeks_Bryce = samplesize / observations_Bryce
+observation_weeks_Bryce
+
+
+# In[36]:
+
+
+observations_Yellowstone = obs_by_park[obs_by_park.park_name == 'Yellowstone National Park'].observations.values
+observation_weeks_Yellowstone = samplesize / observations_Yellowstone
+observation_weeks_Yellowstone
+
+
+# In[37]:
+
+
+# Approximately 3.5 weeks at Bryce and 1.7 weeks at Yellowstone.
+
+
+# In[38]:
+
+
+#Observation of different categories at each park.
+
+
+# In[39]:
+
+
+park_observations = observations.merge(species)
+park_observations
+
+
+# In[40]:
+
+
+# Listing and graphical processing of protected categorys
+
+
+# In[41]:
+
+
+#park_category_observations
+park_category_observations = park_observations.groupby(['park_name', 'category']).observations.sum().reset_index()
+
+
+# In[42]:
+
+
+#Bryce Park Observations of Category 
+bryce_category_park = park_category_observations[(park_category_observations.park_name == 'Bryce National Park')]
+bryce_category_park['perc'] = bryce_category_park['observations'] / bryce_category_park.observations.sum()
+bryce_category_park
+
+
+# In[43]:
+
+
+#Great Smoky Mountains National Park Observations of Category 
+smoky_category_park = park_category_observations[(park_category_observations.park_name == 'Great Smoky Mountains National Park')]
+smoky_category_park['perc'] = smoky_category_park['observations'] / smoky_category_park.observations.sum()
+smoky_category_park
+
+
+# In[44]:
+
+
+#Yellowstone National Park Observations of Category 
+Yellowstone_category_park = park_category_observations[(park_category_observations.park_name == 'Yellowstone National Park')]
+Yellowstone_category_park['perc'] = Yellowstone_category_park['observations'] / Yellowstone_category_park.observations.sum()
+Yellowstone_category_park
+
+
+# In[45]:
+
+
+#Yosemite National Park Observations of Category 
+Yosemite_category_park = park_category_observations[(park_category_observations.park_name == 'Yosemite National Park')]
+Yosemite_category_park['perc'] = Yosemite_category_park['observations'] / Yosemite_category_park.observations.sum()
+Yosemite_category_park
+
+
+# In[46]:
+
+
+#Total Park Observations of Category 
+total_category_park = park_category_observations.groupby(['category']).observations.sum().reset_index()
+total_category_park['perc'] = total_category_park['observations'] / total_category_park.observations.sum()
+total_category_park
+
+
+# In[47]:
+
+
+##park_category_observations
+import numpy as np
+
+
+# In[97]:
+
+
+ind = np.arange(len(total_category_park.category))  # the x locations for the groups
+
+width = 0.15  # the width of the bars
+
+fig, ax = plt.subplots(figsize = (16, 6))
+total = ax.bar(ind - 2*width, total_category_park.perc, width, color='SkyBlue', label='Medium over all parks')
+bryce = ax.bar(ind - 1*width, bryce_category_park.perc, width, color='IndianRed', label='Bryce National Park')
+smoky = ax.bar(ind, smoky_category_park.perc, width, color='Blue', label='Great Smoky Mountains National Park')
+yellowstone = ax.bar(ind + 1*width, Yellowstone_category_park.perc, width, color='Yellow', label='Yellowstone National Park')
+yosemite = ax.bar(ind + 2*width, Yosemite_category_park.perc, width, color='Green', label='Yosemite National Park')
+
+#axis labels
+ax.set_xticks(range(len(total_category_park)))
+ax.set_xticklabels(total_category_park.category.values)
+plt.ylabel('Percent of total park population')
+plt.title('Percentage distribution of observed park population')
+
+x1,x2,y1,y2 = plt.axis()
+
+#add space at the top of the plot so labels won't be outside of the frame
+plt.axis((x1,x2,y1,y2 + 0.1))
+
+#legend
+plt.legend(handles=[total, bryce, smoky, yellowstone, yosemite])
+
+#labels above each bar
+def autolabel(rects):
+     for rect in rects:
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width()/2., height + 0.01, round(height, 2) , ha='center', va='bottom')
+        
+def autolabel2(rects):
+     for rect in rects:
+        height = rect.get_height()
+        ax.text(rect.get_x() + rect.get_width()/2., height + 0.05, round(height, 2) , ha='center', va='bottom')
+
+autolabel(total)
+autolabel2(bryce)
+autolabel(smoky)
+autolabel2(yellowstone)
+autolabel(yosemite)
+
+plt.subplots_adjust(top=1, right=0.99)
+
+plt.show()
