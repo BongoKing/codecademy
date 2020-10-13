@@ -24,21 +24,18 @@ class ChatBot:
   # define .string_to_matrix() below:
   def string_to_matrix(self, user_input):
     tokens = re.findall(r"[\w']+|[^\s\w]", user_input)
-    user_input_matrix = np.zeros((1, max_encoder_seq_length, num_encoder_tokens), dtype='float32')
+    user_input_matrix = np.zeros(
+      (1, max_encoder_seq_length, num_encoder_tokens),
+      dtype='float32')
     for timestep, token in enumerate(tokens):
-      user_input_matrix[0, timestep, input_features_dict[token]] = 1
-
-
+      user_input_matrix[0, timestep, input_features_dict[token]] = 1.
     return user_input_matrix
-  
   
   def generate_response(self, user_input):
     # change user_input into a NumPy matrix:
-    user_input = self.string_to_matrix(user_input)
-
-    
+    input_matrix = self.string_to_matrix(user_input)
     # update argument for .predict():
-    states_value = encoder_model.predict(user_input)
+    states_value = encoder_model.predict(input_matrix)
     target_seq = np.zeros((1, 1, num_decoder_tokens))
     target_seq[0, 0, target_features_dict['<START>']] = 1.
     
@@ -73,5 +70,5 @@ class ChatBot:
   
 chatty_mcchatface = ChatBot()
 # call .generate_response():
-chatty_mcchatface.generate_response("I love the Princess Bride")
+print(chatty_mcchatface.generate_response("What?"))
 
