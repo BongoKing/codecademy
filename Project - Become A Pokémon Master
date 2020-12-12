@@ -1,0 +1,16 @@
+poketypes = {
+  'Fire': {'Water': 0.5, 'Grass': 2},
+  'Water': {'Fire': 2, 'Grass': 0.5},
+  'Grass': {'Fire': 0.5, 'Water': 2}
+}
+
+class Pokemon:
+  def __init__(self, name, level, health, max_health, typ, is_knocked_out):
+    self.name = name
+    self.level = level
+    self.health = health
+    self.max_health = max_health
+    self.typ = typ
+    self.is_knocked_out = ko_status
+
+  knocked_out = False
