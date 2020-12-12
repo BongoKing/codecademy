@@ -14,3 +14,19 @@ class Pokemon:
     self.is_knocked_out = ko_status
 
   knocked_out = False
+
+  def lose_health(self, damage):
+    self.health = self.health-damage
+    if self.health <= 0:
+      self.knock_out()
+    else:
+      print(self.name, " lost ", damage, " health. It now has ", self.health, " left.")
+
+  def gain_health(self, heal):
+    self.health = self.health + heal
+    if self.health >= self.max_health:
+      self.health = self.max_health
+    else:
+      None
+      print(self.name, " got healed ", damage, " health. It now has ", self.health, " left.")
+      
